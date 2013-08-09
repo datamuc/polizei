@@ -119,6 +119,7 @@ body {
     margin-right: auto;
     font-size: 15pt;
     font-family: "Linux Libertine O", Georgia, "DejaVu Serif", "Times New Roman", sans-serif;
+    padding-bottom: 25%;
 }
 a { color: #2c2; text-decoration: none; }
 a:visited { color: #0a0; }
