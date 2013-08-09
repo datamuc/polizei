@@ -1,5 +1,13 @@
 #!/opt/perl/perls/perl-5.14.0/bin/perl
 
+# ----------------------------------------------------------------------
+# "THE BEER-WARE LICENSE" (Revision 42):
+# <m@rbfh.de> wrote this file. As long as you retain this notice you can
+# do whatever you want with this stuff. If we meet some day, and you
+# think this stuff is worth it, you can buy me a beer in return
+# Danijel Tasov
+# ----------------------------------------------------------------------
+
 use 5.014;
 use strict;
 use Mojo::UserAgent;
