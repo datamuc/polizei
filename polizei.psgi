@@ -4,7 +4,6 @@ package Polizei {
     use Web::Simple;
     use DBI;
     use Template::Mustache;
-    use Data::Dumper;
     use Data::Section::Simple;
 
     my $db = DBI->connect("dbi:SQLite:/home/danielt/log/polizei.db");
@@ -17,33 +16,40 @@ package Polizei {
     my $meldung = $ds->get_data_section('meldung');
 
     sub dispatch_request {
+        my ($self, $env) = @_;
         sub ((GET|HEAD) + /) {
             my ($self) = @_;
-            return $self->render_page(0, $_[PSGI_ENV]);
+            $self->render_page(0, $env);
         },
         sub ((GET|HEAD) + /p/*) {
             my ($self, $id) = @_;
-            return $self->render_page($id, $_[PSGI_ENV]);
+            $self->render_page($id, $env);
         },
         sub ((GET|HEAD) + /*) {
             my ($self, $id) = @_;
-            $get->execute($id);
-            my $row = $get->fetchrow_hashref;
-
-            unless($row) {
-                return $self->render_404;
-            }
-
-            $row->{script_name} = $_[PSGI_ENV]->{SCRIPT_NAME};
-            [ 200,
-                ['Content-Type', 'text/html; charset=utf-8'],
-                [ Template::Mustache->render($meldung, $row, $partials) ]
-            ];
+            $self->render_article($id,$env);
         }
     }
 
+    sub render_article {
+        my ($self, $id, $env) = @_;
+        $get->execute($id);
+        my $row = $get->fetchrow_hashref;
+
+        unless($row) {
+            return $self->render_404;
+        }
+
+        $row->{script_name} = $env->{SCRIPT_NAME};
+
+        [ 200,
+            ['Content-Type', 'text/html; charset=utf-8'],
+            [ Template::Mustache->render($meldung, $row, $partials) ]
+        ];
+    }
+
     sub render_page {
-        my ($self, $id, $psgi) = @_;
+        my ($self, $id, $env) = @_;
 
         $page->execute(int($id));
         my $meldungen = $page->fetchall_arrayref({});
@@ -51,13 +57,13 @@ package Polizei {
             return $self->render_404;
         }
         for my $m (@$meldungen) {
-            $m->{link} = "$psgi->{SCRIPT_NAME}/$m->{id}";
+            $m->{link} = "$env->{SCRIPT_NAME}/$m->{id}";
         }
-        my $weiter = "$psgi->{SCRIPT_NAME}/p/" . ($id + 1);
+        my $weiter = "$env->{SCRIPT_NAME}/p/" . ($id + 1);
         my $vars = {
             meldungen => $meldungen,
             next => $weiter,
-            script_name => $psgi->{SCRIPT_NAME},
+            script_name => $env->{SCRIPT_NAME},
         };
         [ 200,
           [ 'content-type', 'text/html; charset=utf-8'],
