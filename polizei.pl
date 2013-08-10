@@ -37,24 +37,7 @@ my $c = Mojo::UserAgent->new;
 $c->get($feed)->res->dom->find("item link")->each(sub{
     buildItems($_->text);
 });
-{
-    my $hinweis = XML::Feed::Entry->new('RSS');
-    $hinweis->title("Hinweis in eigener Sache");
-    $hinweis->content(q{<p>
-        Die einzelnen Meldungen werden jetzt in einer SQLite-Datenbank
-        gespeichert. Außerdem gibt es jetzt eine kleine Webapp mit der man
-        auf die einzelnen Meldungen zugreifen kann.
 
-        <p>Im Feed ist das alles auch schon richtig verlinkt.
-
-        <p>Wenn man jemanden auf eine Meldung hinweisen will, muss
-        man also nicht mehr den Link <blockquote>http://www.polizei.bayern.de/muenchen/news/presse/aktuell/index.html/183424</blockquote> mit dem Hinweis "1218" verschicken, sondern kann einfach folgenden Link verteilen: <blockquote><a href="http://data.rbfh.de/p.cgi/bb9978ebbfe4dbbd19b8dce8c0787597c0d91ad6">http://data.rbfh.de/p.cgi/bb9978ebbfe4dbbd19b8dce8c0787597c0d91ad6</a></blockquote>
-    });
-    $hinweis->id('0ebf27a9-47c3-46d2-88ee-fa005f257fc0');
-    $hinweis->link('http://data.rbfh.de/p.cgi/'.$hinweis->id);
-    $myfeed->add_entry($hinweis);
-    $insert->execute($hinweis->id, $hinweis->title, $hinweis->content->body);
-}
 print Encode::encode('utf-8', $myfeed->as_xml);
 
 sub buildItems {
