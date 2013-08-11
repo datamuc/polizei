@@ -16,7 +16,7 @@ package Polizei {
 
     my $db = DBI->connect("dbi:SQLite:/home/danielt/log/polizei.db");
     my $ds = Data::Section::Simple->new('main');
-    my $get = $db->prepare("select * from meldungen where id = ?");
+    my $get = $db->prepare("select * from meldungen where id like ? || '%'");
     my $page = $db->prepare("select id,title from meldungen order by ts desc limit 10 offset 10 * ?");
 
     my $partials = { head => scalar $ds->get_data_section('head') };
@@ -48,6 +48,11 @@ package Polizei {
             return $self->render_404;
         }
 
+        if($get->fetchrow_hashref) {
+            # there is more than one row? -> 404
+            return $self->render_404;
+        }
+
         $row->{script_name} = $env->{SCRIPT_NAME};
 
         [ 200,
@@ -65,7 +70,9 @@ package Polizei {
             return $self->render_404;
         }
         for my $m (@$meldungen) {
-            $m->{link} = "$env->{SCRIPT_NAME}/$m->{id}";
+            $m->{link} = "$env->{SCRIPT_NAME}/". substr($m->{id}, 0, 10);
+            $m->{title} = "[no title]"
+                unless(length($m->{title}));
         }
         my $weiter = "$env->{SCRIPT_NAME}/p/" . ($id + 1);
         my $vars = {

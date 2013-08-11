@@ -68,7 +68,7 @@ sub buildItems {
         next unless (length($titles[$i]) or length($contents[$i]));
         $item->title($titles[$i]);
         $item->content($contents[$i]);
-        $item->link('http://data.rbfh.de/p.cgi/'.$guid);
+        $item->link('http://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
         $item->id($guid);
         $myfeed->add_entry( $item );
         $insert->execute($guid, $titles[$i], $contents[$i]);
