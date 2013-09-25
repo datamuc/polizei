@@ -1,4 +1,4 @@
-#!/opt/perl/perls/perl-5.14.0/bin/perl
+#!/opt/perl/perls/perl-5.16.3/bin/perl
 
 # ----------------------------------------------------------------------
 # "THE BEER-WARE LICENSE" (Revision 42):
@@ -8,13 +8,15 @@
 # Danijel Tasov
 # ----------------------------------------------------------------------
 
-use 5.014;
+use 5.016;
+use open ':locale';
 use strict;
 use Mojo::UserAgent;
 use Data::Dumper::Concise;
 use Digest::SHA;
 use XML::Feed;
 use Devel::Peek;
+use Carp::Always;
 use URI;
 use Encode;
 use DBI;
@@ -42,13 +44,22 @@ print Encode::encode('utf-8', $myfeed->as_xml);
 
 sub buildItems {
     my $link = shift;
+    my $stop = shift;
     my $dom = $c->get($link)->res->dom;
+
+    unless($stop) {
+        for my $l ($dom->find('a[class="verweiseLinks"]')->each) {
+            if ($l->text =~ /Wiesn-Report/i) {
+                buildItems(URI->new_abs($l->attr("href"),$link)->as_string,1);
+            }
+        }
+    }
 
     $dom->find("img")->each(sub {
         my $img = shift;
-        my $src = $img->attrs->{src};
+        my $src = $img->attr('src');
         my $newsrc = URI->new_abs($src, $link)->as_string;
-        $img->attrs(src => $newsrc);
+        $img->attr(src => $newsrc);
     });
 
     my @titles = map { $_->text } $dom->find("div.inhaltUeberschriftFolgeseiten2")->each;
@@ -61,9 +72,7 @@ sub buildItems {
     }
 
     for my $i (0..$#titles) {
-        #Dump($contents[$i]);
         my $guid = Digest::SHA::sha1_hex($contents[$i]);
-        $contents[$i] = Encode::decode('utf-8', $contents[$i]);
         my $item = XML::Feed::Entry->new('RSS');
         next unless (length($titles[$i]) or length($contents[$i]));
         $item->title($titles[$i]);
@@ -71,7 +80,7 @@ sub buildItems {
         $item->link('http://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
         $item->id($guid);
         $myfeed->add_entry( $item );
-        $insert->execute($guid, $titles[$i], $contents[$i]);
+        $insert->execute($guid, $titles[$i], $contents[$i]) if (! -t STDOUT);
     }
 
 
