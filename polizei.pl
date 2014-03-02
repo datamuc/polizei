@@ -16,18 +16,21 @@ use Data::Dumper::Concise;
 use Digest::SHA;
 use XML::Feed;
 use Devel::Peek;
-use Carp::Always;
+#use Carp::Always;
 use URI;
 use Encode;
 use DBI;
 use utf8;
 use feature 'unicode_strings';
 
-my $db = DBI->connect("dbi:SQLite:/home/danielt/log/polizei.db")
+my $db = DBI->connect("dbi:SQLite:/home/danielt/log/polizei2.db", undef, undef, { RaiseError => 1, PrintError => 0 })
     or die($DBI::errstr);
 my $insert = $db->prepare(q{
-    insert or ignore into meldungen
-    (id, title, meldung, ts) values (?,?,?,datetime('now'))
+    insert into meldungen_idx
+    (id, ts, meldung_docid) values (?,datetime('now'), ?)
+});
+my $docins = $db->prepare(q{
+    insert into meldungen_fts (meldung, title) values (?,?)
 });
 my $feed = "http://www.polizei.bayern.de/muenchen/polizei.rss";
 my $myfeed = XML::Feed->new( 'RSS' );
@@ -49,7 +52,7 @@ sub buildItems {
 
     unless($stop) {
         for my $l ($dom->find('a[class="verweiseLinks"]')->each) {
-            if ($l->text =~ /Wiesn-Report/i) {
+            if ($l->text =~ /Wiesn.*Report/i) {
                 buildItems(URI->new_abs($l->attr("href"),$link)->as_string,1);
             }
         }
@@ -72,7 +75,10 @@ sub buildItems {
     }
 
     for my $i (0..$#titles) {
+        #Dump($contents[$i]);
         my $guid = Digest::SHA::sha1_hex($contents[$i]);
+        #$contents[$i] = Encode::encode('utf-8', $contents[$i]);
+        #say STDERR "|$contents[$i]|\n\n";
         my $item = XML::Feed::Entry->new('RSS');
         next unless (length($titles[$i]) or length($contents[$i]));
         $item->title($titles[$i]);
@@ -80,7 +86,20 @@ sub buildItems {
         $item->link('http://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
         $item->id($guid);
         $myfeed->add_entry( $item );
-        $insert->execute($guid, $titles[$i], $contents[$i]) if (! -t STDOUT);
+
+        eval {
+            $db->begin_work;
+            $docins->execute($contents[$i], $titles[$i]);
+            my $docid = $db->sqlite_last_insert_rowid;
+            $insert->execute($guid, $docid);
+        };
+        my $err = $@;
+        unless($err) {
+            $db->commit;
+            next;
+        }
+        say $err if $err !~ /column id is not unique/;
+        $db->rollback;
     }
 
 
