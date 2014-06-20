@@ -199,6 +199,8 @@ Nothing found
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
     "http://www.w3.org/TR/html4/loose.dtd">
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="//data.rbfh.de/pure-0.5.0/pure-min.css">
 {{#title}}
 <title>{{title}} - Polizeiberichte München</title>
 {{/title}}
@@ -219,8 +221,10 @@ body {
 }
 a { color: #2c2; text-decoration: none; }
 a:visited { color: #0a0; }
+.button-small { font-size: 75%; background-color: #2c2; }
+a.button-small { color: #fff; }
 </style>
 <link rel="alternate" type="application/rss+xml" title="Pressemeldungen der Polizei München" href="/polizei.rss">
-<form method="GET" action="{{script_name}}/search/">
-<input placeholder="suche..." id="search" value="{{needle}}" name="needle" /> <a href="https://www.sqlite.org/fts3.html#section_3">?</a>
+<form method="GET" class="pure-form" action="{{script_name}}/search/">
+<input class="pure-input-rounded" placeholder="suche..." id="search" value="{{needle}}" name="needle" /> <a class="pure-button button-small" href="https://www.sqlite.org/fts3.html#section_3">?</a>
 </form>
