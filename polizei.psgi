@@ -1,4 +1,4 @@
-#!/opt/perl/perls/perl-5.16.3/bin/perl
+#!/opt/perl/perls/perl-5.22.0/bin/perl
 
 # ----------------------------------------------------------------------
 # "THE BEER-WARE LICENSE" (Revision 42):
@@ -9,6 +9,11 @@
 # ----------------------------------------------------------------------
 
 use 5.010;
+BEGIN {
+    use POSIX;
+    POSIX::setlocale(&POSIX::LC_ALL, "de_DE.UTF-8");
+};
+
 
 package Polizei {
     use Web::Simple;
@@ -218,6 +223,7 @@ body {
     font-size: 15pt;
     font-family: Tinos, "Linux Libertine O", Georgia, "DejaVu Serif", "Times New Roman", sans-serif;
     padding-bottom: 25%;
+    text-align: justify;
 }
 a { color: #2c2; text-decoration: none; }
 a:visited { color: #0a0; }

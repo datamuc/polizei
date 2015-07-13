@@ -1,4 +1,4 @@
-#!/opt/perl/perls/perl-5.16.3/bin/perl
+#!/opt/perl/perls/perl-5.22.0/bin/perl
 
 # ----------------------------------------------------------------------
 # "THE BEER-WARE LICENSE" (Revision 42):
@@ -23,8 +23,12 @@ use DBI;
 use utf8;
 use feature 'unicode_strings';
 
-my $db = DBI->connect("dbi:SQLite:/home/danielt/log/polizei2.db", undef, undef, { RaiseError => 1, PrintError => 0 })
-    or die($DBI::errstr);
+my $db = DBI->connect(
+  "dbi:SQLite:/home/danielt/log/polizei2.db",
+  undef,
+  undef,
+  { RaiseError => 1, PrintError => 0 }) or die($DBI::errstr);
+
 my $insert = $db->prepare(q{
     insert into meldungen_idx
     (id, ts, meldung_docid) values (?,datetime('now'), ?)
@@ -66,7 +70,7 @@ sub buildItems {
     });
 
     my @titles = map { $_->text } $dom->find("div.inhaltUeberschriftFolgeseiten2")->each;
-    my @contents = map { $_->content_xml } $dom->find("div.inhaltText")->each;
+    my @contents = map { $_->content } $dom->find("div.inhaltText")->each;
 
 
     if(@titles != @contents) {
@@ -76,11 +80,12 @@ sub buildItems {
 
     for my $i (0..$#titles) {
         #Dump($contents[$i]);
-        my $guid = Digest::SHA::sha1_hex($contents[$i]);
+        my $guid = Digest::SHA::sha1_hex(Encode::encode('utf-8', $contents[$i]));
         #$contents[$i] = Encode::encode('utf-8', $contents[$i]);
         #say STDERR "|$contents[$i]|\n\n";
         my $item = XML::Feed::Entry->new('RSS');
         next unless (length($titles[$i]) or length($contents[$i]));
+        $contents[$i] =~ s/\x01//g;
         $item->title($titles[$i]);
         $item->content($contents[$i]);
         $item->link('http://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
@@ -98,7 +103,7 @@ sub buildItems {
             $db->commit;
             next;
         }
-        say $err if $err !~ /column id is not unique/;
+        say $err if $err !~ /DBD::SQLite::st execute failed: UNIQUE constraint failed:/;
         $db->rollback;
     }
 
