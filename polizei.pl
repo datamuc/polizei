@@ -36,14 +36,14 @@ my $insert = $db->prepare(q{
 my $docins = $db->prepare(q{
     insert into meldungen_fts (meldung, title) values (?,?)
 });
-my $feed = "http://www.polizei.bayern.de/muenchen/polizei.rss";
+my $feed = "https://www.polizei.bayern.de/muenchen/polizei.rss";
 my $myfeed = XML::Feed->new( 'RSS' );
 $myfeed->title("Polizei München Presseberichte" );
 $myfeed->link("http://www.polizei.bayern.de/muenchen/news/presse/aktuell/index.html");
 
 my $c = Mojo::UserAgent->new;
 
-$c->get($feed)->res->dom->find("item link")->each(sub{
+$c->max_redirects(2)->get($feed)->res->dom->find("item link")->each(sub{
     buildItems($_->text);
 });
 
@@ -52,11 +52,10 @@ print Encode::encode('utf-8', $myfeed->as_xml);
 sub buildItems {
     my $link = shift;
     my $stop = shift;
-    my $dom = $c->get($link)->res->dom;
-
+    my $dom = $c->max_redirects(2)->get($link)->res->dom;
     unless($stop) {
         for my $l ($dom->find('a[class="verweiseLinks"]')->each) {
-            if ($l->text =~ /Wiesn.*Report/i) {
+            if ($l->text =~ /Wiesn.*(?:Report|Bericht)/i) {
                 buildItems(URI->new_abs($l->attr("href"),$link)->as_string,1);
             }
         }
@@ -88,7 +87,7 @@ sub buildItems {
         $contents[$i] =~ s/\x01//g;
         $item->title($titles[$i]);
         $item->content($contents[$i]);
-        $item->link('http://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
+        $item->link('https://data.rbfh.de/p.cgi/'.substr($guid, 0, 10));
         $item->id($guid);
         $myfeed->add_entry( $item );
 
