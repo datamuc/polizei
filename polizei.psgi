@@ -1,4 +1,4 @@
-#!/opt/perl/perls/perl-5.22.0/bin/perl
+#!/opt/perl/perls/perl-5.28.1/bin/perl
 
 # ----------------------------------------------------------------------
 # "THE BEER-WARE LICENSE" (Revision 42):
@@ -42,7 +42,7 @@ package Polizei {
         order by ts desc limit 10 offset 10 * ?
     });
     my $search = $db->prepare(q{
-        select id,title,snippet(meldungen_fts) snip
+        select id,title,snippet(meldungen_fts,'***','###','<b>...</b>',-1,15) snip
         from meldungen_idx i join meldungen_fts f on (i.meldung_docid = f.rowid)
         where meldungen_fts match ?
         order by ts desc
@@ -99,6 +99,10 @@ package Polizei {
         }
         for my $m (@$meldungen) {
             $m->{link} = "$env->{SCRIPT_NAME}/". substr($m->{id}, 0, 10);
+            $m->{snip} =~ s/<\S+?>/ /g;
+            $m->{snip} =~ s/<\S+?\b/ /g;
+            $m->{snip} =~ s/\S+?\b>/ /g;
+            $m->{snip} =~ s{\*\*\*(.*?)###}{<b>$1</b>}g;
             $m->{title} = "[no title]"
                 unless(length($m->{title}));
         }
@@ -229,9 +233,9 @@ package Polizei {
       my ($orig, $self) = @_;
       my $app = $self->$orig(@_);
       builder {
-#	enable "Deflater",
-#            content_type => ['text/css','text/html','text/javascript','application/javascript'],
-#	    vary_user_agent => 1;
+	enable "Deflater",
+            content_type => ['text/css','text/html','text/javascript','application/javascript'],
+	    vary_user_agent => 1;
         $app;
       };
     };
@@ -279,7 +283,7 @@ Nothing found
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="//data.rbfh.de/pure-0.6.0/pure-min.css">
-<link rel="stylesheet" href="/fonts/noto/style.css">
+<link rel="stylesheet" href="/fonts/alegreya/style.css">
 <link rel="stylesheet" href="/fonts/lm/style.css">
 
 {{#title}}
@@ -289,36 +293,46 @@ Nothing found
 <title>Polizeiberichte München</title>
 {{/title}}
 <style type="text/css">
+@media screen {
 body {
     /* text-rendering: optimizeLegibility; */
     /* font-variant-ligatures: common-ligatures; */
     line-height: 1.6;
     margin-left: auto;
     margin-right: auto;
-    font-family: "Noto Serif", serif;
-    font-size: 12pt;
+    font-family: Alegreya, serif;
+    font-size: calc(15px + 0.15vw + 0.15vh);
     padding-bottom: 25%;
     padding-left: 4vw;
     padding-right: 4vw;
+    max-width: 35em;
+    background-color: #000;
+    color: #bbb;
 }
-@media screen {
-    body {
-        max-width: 35em;
-        font-size: 13pt;
-        background-color: #000;
-        color: #bbb;
+    a {
+	color: rgb(0,141,201);
+	text-decoration: none;
+        transition: border 0.2s ease-in-out;
+        border-bottom: 1px solid transparent;
     }
-    a { color: rgb(0,141,201); text-decoration: none; }
+    a:hover { border-color: blue; }
     a:visited { color: rgb(0,101,161); }
     h2 a:visited { color: rgb(0,141,201); }
     .button-small { font-size: 75%; background-color: rgb(0,141,201); }
     a.button-small { color: #fff; }
-}
 #meldung { hyphens: auto; }
-h1,h2,h3,h4,h5,h6 { font-family: "Latin Modern Sans", sans-serif; font-weight: bold; }
+h1,h2,h3,h4,h5,h6 { font-family: "Alegreya Sans", "Latin Modern Sans", sans-serif; font-weight: bold; }
+}
+
 @media print {
+  body { color: black; background-color: white; font-family: serif; line-height: 1.3;}
   .pure-form { display: none; }
 }
+
+@media (prefers-color-scheme: light) {
+    body { color: black;  background-color: #EEEEEE; }
+}
+
 </style>
 <link rel="alternate" type="application/rss+xml" title="Pressemeldungen der Polizei München" href="/polizei.rss">
 </head>
